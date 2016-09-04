@@ -26,11 +26,7 @@ Adafruit_INA219 ina219;
 // Digital I/O pins
 const int DHT_PIN = 2;
 const int POWER_FAN = 5;
-const int RELAY_1_RED = 6;
-const int RELAY_1_BLK = 7;
-const int RELAY_2_RED = 8;
-const int RELAY_2_BLK = 9;
-const int POWER_HEAT = 11;
+const int INT_LIGHT_PIN = 12; // Interior lighting
 const int LIGHT_PIN = 13;     // Status light
 
 // Other constants
@@ -67,15 +63,13 @@ void setup(void) {
   /*
    * Initialize pin(s)
    */
+  pinMode(INT_LIGHT_PIN, OUTPUT);
   pinMode(LIGHT_PIN, OUTPUT);
   pinMode(POWER_FAN, OUTPUT);
-  pinMode(POWER_HEAT, OUTPUT);
-  pinMode(RELAY_1_RED, OUTPUT);
-  pinMode(RELAY_1_BLK, OUTPUT);
-  pinMode(RELAY_2_RED, OUTPUT);
-  pinMode(RELAY_2_BLK, OUTPUT);
 
   Serial.println("Sensors initialized and online!");
+  
+  interiorLightOff();
 }
 
 void loop(void) {
@@ -228,6 +222,12 @@ void actOnInput(int inByte) {
   case 'p':
     powerOff();
     break;
+  case 'I':
+    interiorLightOn();
+    break;
+  case 'i':
+    interiorLightOff();
+    break;
   }
 }
 
@@ -253,14 +253,7 @@ void lightOff() {
 void powerOn() {
   // Turn on power (if not on already)
   if (!isPowerOn) {
-    if (DHT11.temperature > LOWER_TEMP || DHT11.temperature < -200) {
-      // When errant temp readings are received, they are typically -400ish degrees. 
-      // Better to engage fan than heat to avoid potential overheating in case 
-      // actual temperature is high.
-      digitalWrite(POWER_FAN, HIGH);
-    } else {
-      digitalWrite(POWER_HEAT, HIGH);
-    }
+    digitalWrite(POWER_FAN, HIGH);
     isPowerOn = true;
   }
   powerOnSeconds++;  // increment power on counter
@@ -271,9 +264,24 @@ void powerOff() {
   if (isPowerOn) {
     // Shut both off, regardless
     digitalWrite(POWER_FAN, LOW);
-    digitalWrite(POWER_HEAT, LOW);
     isPowerOn = false;
   }
   powerOnSeconds = 0;  // reset counter for time power is on
+}
+
+void interiorLightOn() {
+  // Turn on interior light (if not on already)
+  if (!isIntLightOn) {
+    digitalWrite(INT_LIGHT_PIN, HIGH);
+    isIntLightOn = true;
+  }
+}
+
+void interiorLightOff() {
+  // Turn off interior light (if on)
+  if (isIntLightOn) {
+    digitalWrite(INT_LIGHT_PIN, LOW);
+    isIntLightOn = false;
+  }
 }
 
